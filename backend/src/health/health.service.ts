@@ -6,6 +6,7 @@ import {
   DatabaseService,
   type DatabaseConnectionStatus,
 } from "../database/database.service";
+import { NotificationQueueService } from "../notifications/infrastructure/queue/notification-queue.service";
 
 export interface HealthStatus {
   status: "ok" | "degraded";
@@ -15,6 +16,7 @@ export interface HealthStatus {
     application: "up";
     database: DatabaseConnectionStatus;
     redis: CacheStatus;
+    notificationQueue: "up" | "down";
   };
   version?: string;
 }
@@ -25,6 +27,7 @@ export class HealthService {
     private readonly configService: ConfigService<AppConfig, true>,
     private readonly databaseService: DatabaseService,
     private readonly cacheService: CacheService,
+    private readonly notificationQueueService: NotificationQueueService,
   ) {}
 
   getLiveness(includeVersion = false): Omit<HealthStatus, "services"> {
@@ -42,19 +45,24 @@ export class HealthService {
   }
 
   async getStatus(includeVersion = false): Promise<HealthStatus> {
-    const [database, redis] = await Promise.all([
+    const [database, redis, notificationQueue] = await Promise.all([
       this.databaseService.ping(),
       this.cacheService.ping(),
+      this.notificationQueueService.getStatus(),
     ]);
 
     const response: HealthStatus = {
-      status: database === "up" && redis === "up" ? "ok" : "degraded",
+      status:
+        database === "up" && redis === "up" && notificationQueue === "up"
+          ? "ok"
+          : "degraded",
       service: this.configService.get("serviceName", { infer: true }),
       timestamp: new Date().toISOString(),
       services: {
         application: "up",
         database,
         redis,
+        notificationQueue,
       },
     };
 

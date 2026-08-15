@@ -142,6 +142,42 @@ class EnvironmentVariables {
   @Min(1000)
   @Max(30000)
   WEATHER_PROVIDER_TIMEOUT_MS = 5000;
+
+  @IsIn(["true", "false", true, false])
+  NOTIFICATIONS_ENABLED: string | boolean = "true";
+
+  @IsString()
+  WEB_PUSH_VAPID_PUBLIC_KEY = "";
+
+  @IsString()
+  WEB_PUSH_VAPID_PRIVATE_KEY = "";
+
+  @IsString()
+  @IsNotEmpty()
+  WEB_PUSH_SUBJECT = "mailto:security@clima-alerta.local";
+
+  @IsString()
+  NOTIFICATION_ENCRYPTION_KEY = "";
+
+  @IsString()
+  NOTIFICATION_HASH_SALT = "";
+
+  @IsString()
+  @IsNotEmpty()
+  @Matches(/^[a-z0-9:-]+$/)
+  NOTIFICATION_QUEUE_PREFIX = "clima-alerta:queue";
+
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(30)
+  @Max(86400)
+  NOTIFICATION_TEST_COOLDOWN_SECONDS = 300;
+
+  @Transform(({ value }) => Number(value))
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  NOTIFICATION_DELIVERY_RETENTION_DAYS = 30;
 }
 
 export function validateEnvironment(

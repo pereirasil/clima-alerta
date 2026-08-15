@@ -13,6 +13,17 @@ import {
   type LiveRadarLayer,
   type StateOption,
 } from "./weather-api";
+import {
+  fetchNotificationPreferences,
+  getBrowserNotificationState,
+  sendTestNotification,
+  subscribeToWebPush,
+  unsubscribeFromWebPush,
+  updateNotificationPreferences,
+  type BrowserNotificationState,
+  type NotificationPreferences,
+  type NotificationSubscription,
+} from "./notification-api";
 import type {
   DailyWeatherForecast,
   HourlyWeatherForecast,
@@ -92,6 +103,16 @@ export default function Home() {
   const [permissionMessage, setPermissionMessage] = useState(
     "Geolocalizacao do navegador nao solicitada.",
   );
+  const [notificationState, setNotificationState] =
+    useState<BrowserNotificationState>("not-requested");
+  const [notificationPreferences, setNotificationPreferences] =
+    useState<NotificationPreferences | null>(null);
+  const [notificationSubscription, setNotificationSubscription] =
+    useState<NotificationSubscription | null>(null);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState(
+    "Permissao ainda nao solicitada.",
+  );
 
   useEffect(() => {
     void loadWeather(defaultLocation);
@@ -126,9 +147,35 @@ export default function Home() {
     }
 
     void initializeLocations();
+    void initializeNotifications();
     // Initial boot only: load default weather and selector data once.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function initializeNotifications() {
+    const state = getBrowserNotificationState();
+    setNotificationState(state);
+    if (state === "not-supported") {
+      setNotificationMessage("Este navegador nao suporta Web Push.");
+      return;
+    }
+
+    try {
+      const preferences = await fetchNotificationPreferences();
+      setNotificationPreferences(preferences);
+      setNotificationMessage(
+        state === "denied"
+          ? "As notificacoes estao bloqueadas neste navegador."
+          : "Receba avisos relevantes para seus locais monitorados.",
+      );
+    } catch (error) {
+      setNotificationMessage(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel carregar preferencias de notificacao.",
+      );
+    }
+  }
 
   async function loadWeather(location: LocationPreset) {
     setSelectedLocation(location);
@@ -356,6 +403,79 @@ export default function Home() {
     );
   }
 
+  async function enableNotifications() {
+    if (getBrowserNotificationState() === "not-supported") {
+      setNotificationState("not-supported");
+      setNotificationMessage("Este navegador nao suporta Web Push.");
+      return;
+    }
+
+    setNotificationBusy(true);
+    setNotificationMessage("Solicitando permissao do navegador.");
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationState(getBrowserNotificationState());
+      if (permission !== "granted") {
+        setNotificationMessage(
+          "As notificacoes estao bloqueadas neste navegador. Voce pode alterar essa permissao nas configuracoes do navegador.",
+        );
+        return;
+      }
+      const subscription = await subscribeToWebPush();
+      const preferences = await updateNotificationPreferences({
+        notificationsEnabled: true,
+      });
+      setNotificationSubscription(subscription);
+      setNotificationPreferences(preferences);
+      setNotificationMessage("Notificacoes ativadas para este navegador.");
+    } catch (error) {
+      setNotificationMessage(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel ativar notificacoes.",
+      );
+    } finally {
+      setNotificationBusy(false);
+    }
+  }
+
+  async function disableNotifications() {
+    setNotificationBusy(true);
+    try {
+      await unsubscribeFromWebPush(notificationSubscription?.id);
+      const preferences = await updateNotificationPreferences({
+        notificationsEnabled: false,
+      });
+      setNotificationSubscription(null);
+      setNotificationPreferences(preferences);
+      setNotificationMessage("Notificacoes desativadas neste navegador.");
+    } catch (error) {
+      setNotificationMessage(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel desativar notificacoes.",
+      );
+    } finally {
+      setNotificationBusy(false);
+    }
+  }
+
+  async function requestTestNotification() {
+    setNotificationBusy(true);
+    try {
+      await sendTestNotification();
+      setNotificationMessage("Notificacao de teste enfileirada.");
+    } catch (error) {
+      setNotificationMessage(
+        error instanceof Error
+          ? error.message
+          : "Nao foi possivel enviar teste.",
+      );
+    } finally {
+      setNotificationBusy(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#eef3ef] text-[#13201b]">
       <section className="border-b border-[#cad7d1] bg-[#fbfcf8]">
@@ -365,28 +485,40 @@ export default function Home() {
             observation={weather?.current}
             status={status}
           />
-          <LocationPanel
-            selectedLocation={selectedLocation}
-            countryCode={countryCode}
-            stateCode={stateCode}
-            cityLabel={cityLabel}
-            states={states}
-            cities={cities}
-            locationSource={locationSource}
-            locationLoading={locationLoading}
-            locationMessage={locationMessage}
-            formLatitude={formLatitude}
-            formLongitude={formLongitude}
-            permissionMessage={permissionMessage}
-            onLatitudeChange={setFormLatitude}
-            onLongitudeChange={setFormLongitude}
-            onCountryChange={selectCountry}
-            onStateChange={selectState}
-            onCityChange={selectCity}
-            onSelectedCitySubmit={submitSelectedCity}
-            onSubmit={submitManualLocation}
-            onBrowserLocation={requestBrowserLocation}
-          />
+          <div className="grid gap-4">
+            <LocationPanel
+              selectedLocation={selectedLocation}
+              countryCode={countryCode}
+              stateCode={stateCode}
+              cityLabel={cityLabel}
+              states={states}
+              cities={cities}
+              locationSource={locationSource}
+              locationLoading={locationLoading}
+              locationMessage={locationMessage}
+              formLatitude={formLatitude}
+              formLongitude={formLongitude}
+              permissionMessage={permissionMessage}
+              onLatitudeChange={setFormLatitude}
+              onLongitudeChange={setFormLongitude}
+              onCountryChange={selectCountry}
+              onStateChange={selectState}
+              onCityChange={selectCity}
+              onSelectedCitySubmit={submitSelectedCity}
+              onSubmit={submitManualLocation}
+              onBrowserLocation={requestBrowserLocation}
+            />
+            <NotificationPanel
+              browserState={notificationState}
+              preferences={notificationPreferences}
+              subscription={notificationSubscription}
+              busy={notificationBusy}
+              message={notificationMessage}
+              onEnable={enableNotifications}
+              onDisable={disableNotifications}
+              onTest={requestTestNotification}
+            />
+          </div>
         </div>
       </section>
 
@@ -439,8 +571,10 @@ function HeroPanel({
   observation?: WeatherObservation;
   status: "loading" | "ready" | "error";
 }) {
+  const mapUrl = buildHeroMapUrl(selectedLocation);
+
   return (
-    <div className="grid min-h-[260px] content-between gap-6 rounded border border-[#cad7d1] bg-[#12352f] p-5 text-white shadow-sm sm:p-6">
+    <div className="grid min-h-[620px] content-between gap-5 rounded border border-[#cad7d1] bg-[#12352f] p-5 text-white shadow-sm sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase text-[#9ed8c5]">
@@ -457,6 +591,16 @@ function HeroPanel({
               ? "Indisponivel"
               : "Online"}
         </span>
+      </div>
+
+      <div className="min-h-0 overflow-hidden rounded border border-white/15 bg-[#0c2924]">
+        <iframe
+          className="h-[300px] w-full border-0 sm:h-[360px] lg:h-[430px]"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          src={mapUrl}
+          title={`Mapa de ${selectedLocation.label}`}
+        />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
@@ -489,6 +633,18 @@ function HeroPanel({
       </div>
     </div>
   );
+}
+
+function buildHeroMapUrl(location: LocationPreset): string {
+  const latitudeSpan = 0.18;
+  const longitudeSpan = 0.24;
+  const left = clampCoordinate(location.longitude - longitudeSpan, -180, 180);
+  const right = clampCoordinate(location.longitude + longitudeSpan, -180, 180);
+  const top = clampCoordinate(location.latitude + latitudeSpan, -90, 90);
+  const bottom = clampCoordinate(location.latitude - latitudeSpan, -90, 90);
+  const marker = `${location.latitude},${location.longitude}`;
+
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${left}%2C${bottom}%2C${right}%2C${top}&layer=mapnik&marker=${marker}`;
 }
 
 function HeroMetric({ label, value }: { label: string; value: string }) {
@@ -640,6 +796,116 @@ function LocationPanel(props: {
           Consultar coordenada
         </button>
       </form>
+    </aside>
+  );
+}
+
+function NotificationPanel(props: {
+  browserState: BrowserNotificationState;
+  preferences: NotificationPreferences | null;
+  subscription: NotificationSubscription | null;
+  busy: boolean;
+  message: string;
+  onEnable: () => void;
+  onDisable: () => void;
+  onTest: () => void;
+}) {
+  const enabled =
+    props.browserState === "granted" &&
+    props.preferences?.notificationsEnabled === true;
+  const stateLabel = {
+    "not-supported": "Nao suportado",
+    "not-requested": "Nao solicitado",
+    granted: "Permitido",
+    denied: "Negado",
+  }[props.browserState];
+
+  return (
+    <aside className="rounded border border-[#cad7d1] bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase text-[#65756f]">
+            Notificacoes
+          </p>
+          <p className="mt-1 text-lg font-semibold">Web Push</p>
+          <p className="mt-1 text-sm leading-5 text-[#5d6f68]">
+            Receba avisos relevantes para seus locais monitorados.
+          </p>
+        </div>
+        <span className="rounded bg-[#eef3ef] px-2 py-1 text-xs font-semibold text-[#315f55]">
+          {stateLabel}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-2 rounded border border-[#edf2ef] bg-[#fbfcf8] p-3 text-xs text-[#52615c]">
+        <div className="flex justify-between gap-3">
+          <span>Navegador</span>
+          <strong className="text-[#13201b]">{stateLabel}</strong>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>Notificacoes</span>
+          <strong className="text-[#13201b]">
+            {enabled ? "Ativadas" : "Desativadas"}
+          </strong>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>Tipos</span>
+          <strong className="text-right text-[#13201b]">
+            Teste; oficiais futuros
+          </strong>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span>Local monitorado</span>
+          <strong className="text-right text-[#13201b]">
+            Configuracao futura
+          </strong>
+        </div>
+      </div>
+
+      {props.browserState === "denied" && (
+        <p className="mt-3 rounded border border-[#d9b7b0] bg-[#fff8f6] p-3 text-xs leading-5 text-[#8a352b]">
+          As notificacoes estao bloqueadas neste navegador. Voce pode alterar essa
+          permissao nas configuracoes do navegador.
+        </p>
+      )}
+
+      <div className="mt-3 grid gap-2">
+        {!enabled && (
+          <button
+            className="w-full rounded bg-[#315f55] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#244d44] disabled:cursor-not-allowed disabled:bg-[#9aa9a3] focus:outline-none focus:ring-2 focus:ring-[#315f55] focus:ring-offset-2"
+            type="button"
+            disabled={props.busy || props.browserState === "not-supported"}
+            onClick={props.onEnable}
+          >
+            {props.busy ? "Aguarde..." : "Ativar notificacoes"}
+          </button>
+        )}
+        {enabled && (
+          <>
+            <button
+              className="w-full rounded bg-[#315f55] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#244d44] disabled:cursor-not-allowed disabled:bg-[#9aa9a3] focus:outline-none focus:ring-2 focus:ring-[#315f55] focus:ring-offset-2"
+              type="button"
+              disabled={props.busy || !props.subscription}
+              onClick={props.onTest}
+            >
+              Enviar notificacao de teste
+            </button>
+            <button
+              className="w-full rounded border border-[#315f55] px-3 py-2 text-sm font-semibold text-[#315f55] transition hover:bg-[#edf3ef] disabled:cursor-not-allowed disabled:border-[#9aa9a3] disabled:text-[#7c8b85] focus:outline-none focus:ring-2 focus:ring-[#315f55]"
+              type="button"
+              disabled={props.busy}
+              onClick={props.onDisable}
+            >
+              Desativar notificacoes
+            </button>
+          </>
+        )}
+      </div>
+      <p className="mt-2 text-xs leading-5 text-[#5d6f68]">{props.message}</p>
+      <p className="mt-2 text-xs leading-5 text-[#5d6f68]">
+        Infraestrutura pronta para push; alertas oficiais reais ainda nao estao
+        integrados.
+      </p>
     </aside>
   );
 }
@@ -1377,4 +1643,8 @@ function normalizeText(value: string): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
+}
+
+function clampCoordinate(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
 }

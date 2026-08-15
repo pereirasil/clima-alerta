@@ -39,3 +39,32 @@ export const alertStatusEnum = pgEnum("alert_status", [
   "EXPIRED",
   "CANCELLED",
 ]);
+
+export const notificationChannelEnum = pgEnum("notification_channel", [
+  "WEB_PUSH",
+  "EXPO",
+  "FCM",
+  "APNS",
+]);
+
+export const notificationPlatformEnum = pgEnum("notification_platform", [
+  "WEB",
+  "ANDROID",
+  "IOS",
+  "UNKNOWN",
+]);
+
+export const notificationTypeEnum = pgEnum("notification_type", [
+  "TEST",
+  "WEATHER_INFO",
+  "OFFICIAL_ALERT",
+  "EARTHQUAKE",
+  "FIRE",
+  "CYCLONE",
+  "SYSTEM",
+]);
+
+export const notificationDeliveryStatusEnum = pgEnum(
+  "notification_delivery_status",
+  ["PENDING", "PROCESSING", "DELIVERED", "FAILED", "EXPIRED", "SKIPPED"],
+);

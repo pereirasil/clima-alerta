@@ -35,6 +35,17 @@ export interface AppConfig {
     keyPrefix: string;
     connectTimeoutMs: number;
   };
+  notifications: {
+    enabled: boolean;
+    vapidPublicKey: string;
+    vapidPrivateKey: string;
+    vapidSubject: string;
+    encryptionKey: string;
+    hashSalt: string;
+    queuePrefix: string;
+    testCooldownSeconds: number;
+    deliveryRetentionDays: number;
+  };
   weather: {
     provider: "open-meteo" | "none";
     openMeteoBaseUrl: string;
@@ -84,6 +95,22 @@ export default (): AppConfig => ({
     db: Number(process.env.REDIS_DB ?? 0),
     keyPrefix: process.env.REDIS_KEY_PREFIX ?? "clima-alerta",
     connectTimeoutMs: Number(process.env.REDIS_CONNECT_TIMEOUT_MS ?? 3000),
+  },
+  notifications: {
+    enabled: process.env.NOTIFICATIONS_ENABLED !== "false",
+    vapidPublicKey: process.env.WEB_PUSH_VAPID_PUBLIC_KEY ?? "",
+    vapidPrivateKey: process.env.WEB_PUSH_VAPID_PRIVATE_KEY ?? "",
+    vapidSubject:
+      process.env.WEB_PUSH_SUBJECT ?? "mailto:security@clima-alerta.local",
+    encryptionKey: process.env.NOTIFICATION_ENCRYPTION_KEY ?? "",
+    hashSalt: process.env.NOTIFICATION_HASH_SALT ?? "",
+    queuePrefix: process.env.NOTIFICATION_QUEUE_PREFIX ?? "clima-alerta:queue",
+    testCooldownSeconds: Number(
+      process.env.NOTIFICATION_TEST_COOLDOWN_SECONDS ?? 300,
+    ),
+    deliveryRetentionDays: Number(
+      process.env.NOTIFICATION_DELIVERY_RETENTION_DAYS ?? 30,
+    ),
   },
   weather: {
     provider: (process.env.WEATHER_PROVIDER ?? "open-meteo") as

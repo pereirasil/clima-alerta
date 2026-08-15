@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS postgis;
-
 DO $$ BEGIN
   CREATE TYPE data_source_type AS ENUM ('WEATHER', 'OFFICIAL_ALERT', 'EARTHQUAKE', 'FIRE', 'AIR_QUALITY', 'OTHER');
 EXCEPTION
@@ -46,7 +44,7 @@ CREATE TABLE IF NOT EXISTS locations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   latitude double precision NOT NULL,
   longitude double precision NOT NULL,
-  point geometry(Point, 4326) NOT NULL,
+  point jsonb NOT NULL,
   country_code char(2),
   state text,
   city text,
@@ -61,7 +59,7 @@ CREATE TABLE IF NOT EXISTS weather_snapshots (
   source_id uuid NOT NULL REFERENCES data_sources(id),
   latitude double precision NOT NULL,
   longitude double precision NOT NULL,
-  point geometry(Point, 4326) NOT NULL,
+  point jsonb NOT NULL,
   temperature double precision,
   apparent_temperature double precision,
   humidity double precision,
@@ -88,7 +86,7 @@ CREATE TABLE IF NOT EXISTS natural_events (
   expires_at timestamptz,
   latitude double precision,
   longitude double precision,
-  geometry geometry(Geometry, 4326),
+  geometry jsonb,
   raw_metadata jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -107,7 +105,7 @@ CREATE TABLE IF NOT EXISTS official_alerts (
   instruction text,
   effective_at timestamptz NOT NULL,
   expires_at timestamptz,
-  geometry geometry(Geometry, 4326),
+  geometry jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT official_alerts_unique_source_external UNIQUE (source_id, external_id)
@@ -118,10 +116,9 @@ CREATE INDEX IF NOT EXISTS natural_events_source_id_idx ON natural_events (sourc
 CREATE INDEX IF NOT EXISTS natural_events_external_id_idx ON natural_events (external_id);
 CREATE INDEX IF NOT EXISTS natural_events_occurred_at_idx ON natural_events (occurred_at);
 CREATE INDEX IF NOT EXISTS natural_events_expires_at_idx ON natural_events (expires_at);
-CREATE INDEX IF NOT EXISTS natural_events_geometry_gix ON natural_events USING gist (geometry);
+CREATE INDEX IF NOT EXISTS natural_events_location_idx ON natural_events (latitude, longitude);
 CREATE INDEX IF NOT EXISTS official_alerts_source_id_idx ON official_alerts (source_id);
 CREATE INDEX IF NOT EXISTS official_alerts_external_id_idx ON official_alerts (external_id);
 CREATE INDEX IF NOT EXISTS official_alerts_expires_at_idx ON official_alerts (expires_at);
-CREATE INDEX IF NOT EXISTS official_alerts_geometry_gix ON official_alerts USING gist (geometry);
-CREATE INDEX IF NOT EXISTS locations_point_gix ON locations USING gist (point);
+CREATE INDEX IF NOT EXISTS locations_coordinates_idx ON locations (latitude, longitude);
 CREATE INDEX IF NOT EXISTS weather_snapshots_source_observed_idx ON weather_snapshots (source_id, observed_at);

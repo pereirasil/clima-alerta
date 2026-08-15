@@ -11,6 +11,7 @@ import { AlertsModule } from "./alerts/alerts.module";
 import { LocationsModule } from "./locations/locations.module";
 import { DatabaseModule } from "./database/database.module";
 import { CacheModule } from "./cache/cache.module";
+import { NotificationsModule } from "./notifications/notifications.module";
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { CacheModule } from "./cache/cache.module";
     WeatherModule,
     AlertsModule,
     LocationsModule,
+    NotificationsModule,
   ],
   providers: [
     {

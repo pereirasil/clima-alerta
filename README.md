@@ -63,6 +63,55 @@ Endpoints de clima real:
 - `GET http://localhost:4000/api/v1/weather/hourly?latitude=-22.9068&longitude=-43.1729`
 - `GET http://localhost:4000/api/v1/weather/daily?latitude=-22.9068&longitude=-43.1729`
 
+Endpoints de notificacoes:
+
+- `GET http://localhost:4000/api/v1/notifications/vapid-public-key`
+- `POST http://localhost:4000/api/v1/notifications/subscriptions`
+- `DELETE http://localhost:4000/api/v1/notifications/subscriptions/:id`
+- `GET http://localhost:4000/api/v1/notifications/preferences`
+- `PUT http://localhost:4000/api/v1/notifications/preferences`
+- `POST http://localhost:4000/api/v1/notifications/test`
+
+## Notificacoes Web Push
+
+A Fase 6 implementa infraestrutura de notificacoes para Web Push, com fila Redis,
+VAPID, preferencias persistidas e notification de teste. Ela nao implementa
+alertas oficiais, terremotos, incendios, ciclones ou regras de emergencia.
+
+Gere chaves VAPID localmente:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+Configure somente no backend:
+
+```bash
+WEB_PUSH_VAPID_PUBLIC_KEY=...
+WEB_PUSH_VAPID_PRIVATE_KEY=...
+WEB_PUSH_SUBJECT=mailto:security@clima-alerta.local
+```
+
+`WEB_PUSH_VAPID_PRIVATE_KEY` nunca deve ser exposta no frontend. Em producao,
+Web Push e Service Worker exigem HTTPS; `localhost` funciona para desenvolvimento.
+
+Teste manual controlado:
+
+1. `npm run infra:up`
+2. `npm run db:migrate`
+3. `npm run backend:dev`
+4. `npm run dev`
+5. Acesse `http://localhost:3000`.
+6. Na secao Notificacoes, clique em `Ativar notificacoes`.
+7. Aceite a permissao do navegador.
+8. Clique em `Enviar notificacao de teste`.
+9. Confirme que a notificacao recebida e de teste e abre o app ao clicar.
+
+Privacidade: a subscription Web Push e armazenada criptografada; endpoint,
+identidade anonima e user agent sao usados apenas como hashes. O usuario pode
+desativar notificacoes pela propria interface. A retencao padrao de entregas e
+30 dias.
+
 ## Infraestrutura local
 
 ```bash
