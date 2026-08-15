@@ -813,54 +813,19 @@ function NotificationPanel(props: {
   const enabled =
     props.browserState === "granted" &&
     props.preferences?.notificationsEnabled === true;
-  const stateLabel = {
-    "not-supported": "Nao suportado",
-    "not-requested": "Nao solicitado",
-    granted: "Permitido",
-    denied: "Negado",
-  }[props.browserState];
 
   return (
     <aside className="rounded border border-[#cad7d1] bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase text-[#65756f]">
-            Notificacoes
-          </p>
-          <p className="mt-1 text-lg font-semibold">Web Push</p>
-          <p className="mt-1 text-sm leading-5 text-[#5d6f68]">
-            Receba avisos relevantes para seus locais monitorados.
-          </p>
-        </div>
-        <span className="rounded bg-[#eef3ef] px-2 py-1 text-xs font-semibold text-[#315f55]">
-          {stateLabel}
-        </span>
-      </div>
-
-      <div className="mt-4 grid gap-2 rounded border border-[#edf2ef] bg-[#fbfcf8] p-3 text-xs text-[#52615c]">
-        <div className="flex justify-between gap-3">
-          <span>Navegador</span>
-          <strong className="text-[#13201b]">{stateLabel}</strong>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Notificacoes</span>
-          <strong className="text-[#13201b]">
-            {enabled ? "Ativadas" : "Desativadas"}
-          </strong>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Tipos</span>
-          <strong className="text-right text-[#13201b]">
-            Teste; oficiais futuros
-          </strong>
-        </div>
-        <div className="flex justify-between gap-3">
-          <span>Local monitorado</span>
-          <strong className="text-right text-[#13201b]">
-            Configuracao futura
-          </strong>
-        </div>
-      </div>
+      <p className="text-xs font-semibold uppercase text-[#65756f]">
+        Notificacoes
+      </p>
+      <p className="mt-1 text-lg font-semibold">
+        Deseja ativar as notificacoes?
+      </p>
+      <p className="mt-2 text-sm leading-5 text-[#5d6f68]">
+        Ative para ser notificado sobre atualizacoes da meteorologia no local
+        monitorado.
+      </p>
 
       {props.browserState === "denied" && (
         <p className="mt-3 rounded border border-[#d9b7b0] bg-[#fff8f6] p-3 text-xs leading-5 text-[#8a352b]">
@@ -881,31 +846,17 @@ function NotificationPanel(props: {
           </button>
         )}
         {enabled && (
-          <>
-            <button
-              className="w-full rounded bg-[#315f55] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#244d44] disabled:cursor-not-allowed disabled:bg-[#9aa9a3] focus:outline-none focus:ring-2 focus:ring-[#315f55] focus:ring-offset-2"
-              type="button"
-              disabled={props.busy || !props.subscription}
-              onClick={props.onTest}
-            >
-              Enviar notificacao de teste
-            </button>
-            <button
-              className="w-full rounded border border-[#315f55] px-3 py-2 text-sm font-semibold text-[#315f55] transition hover:bg-[#edf3ef] disabled:cursor-not-allowed disabled:border-[#9aa9a3] disabled:text-[#7c8b85] focus:outline-none focus:ring-2 focus:ring-[#315f55]"
-              type="button"
-              disabled={props.busy}
-              onClick={props.onDisable}
-            >
-              Desativar notificacoes
-            </button>
-          </>
+          <button
+            className="w-full rounded border border-[#315f55] px-3 py-2 text-sm font-semibold text-[#315f55] transition hover:bg-[#edf3ef] disabled:cursor-not-allowed disabled:border-[#9aa9a3] disabled:text-[#7c8b85] focus:outline-none focus:ring-2 focus:ring-[#315f55]"
+            type="button"
+            disabled={props.busy}
+            onClick={props.onDisable}
+          >
+            Desativar notificacoes
+          </button>
         )}
       </div>
       <p className="mt-2 text-xs leading-5 text-[#5d6f68]">{props.message}</p>
-      <p className="mt-2 text-xs leading-5 text-[#5d6f68]">
-        Infraestrutura pronta para push; alertas oficiais reais ainda nao estao
-        integrados.
-      </p>
     </aside>
   );
 }
