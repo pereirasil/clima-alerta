@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.5
+    container_name: clima-alerta-postgres
+    environment:
+      POSTGRES_DB: clima_alerta
+      POSTGRES_USER: clima_alerta
+      POSTGRES_PASSWORD: clima_alerta_dev_password
+    ports:
+      - "${DATABASE_PORT:-5432}:5432"
+    volumes:
+      - clima_alerta_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clima_alerta -d clima_alerta"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - clima_alerta
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: clima-alerta-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - clima_alerta_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks:
+      - clima_alerta
+
+volumes:
+  clima_alerta_postgres_data:
+  clima_alerta_redis_data:
+
+networks:
+  clima_alerta:
+    driver: bridge
