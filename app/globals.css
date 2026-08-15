@@ -17,3 +17,12 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+::selection {
+  background: #9ed8c5;
+  color: #13201b;
+}
+
+* {
+  scrollbar-color: #9eb3aa #eef3ef;
+}
