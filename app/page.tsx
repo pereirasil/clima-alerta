@@ -1302,16 +1302,16 @@ function StatusRow({
 function SourcePanel({ observation }: { observation: WeatherObservation }) {
   return (
     <aside className="min-w-0 rounded border border-[#cad7d1] bg-[#17211d] p-5 text-white shadow-sm">
-      <p className="text-sm font-semibold text-[#9bc7b8]">Fonte</p>
-      <p className="mt-3 text-2xl font-semibold">{observation.source.name}</p>
+      <p className="text-sm font-semibold text-[#9bc7b8]">Dados meteorologicos</p>
+      <p className="mt-3 text-2xl font-semibold">Previsao atualizada</p>
       <p className="mt-3 text-sm leading-6 text-[#c8d7d0]">
-        Atualizado pela API do backend em{" "}
+        Ultima atualizacao em{" "}
         {formatDateTime(observation.source.fetchedAt, observation.timezone)}.
       </p>
       <div className="mt-5 border-t border-white/15 pt-4">
-        <p className="text-sm font-semibold text-[#f1d28b]">Alertas oficiais</p>
+        <p className="text-sm font-semibold text-[#f1d28b]">Avisos importantes</p>
         <p className="mt-2 text-sm leading-6 text-[#c8d7d0]">
-          Nenhum provider oficial de alertas foi integrado nesta fase.
+          Ainda nao ha avisos oficiais disponiveis para este local.
         </p>
       </div>
     </aside>
